@@ -19,19 +19,19 @@ lihl
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
 Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
-sub-302/
-  run-01/
-    self_induction/
-      sub-302_run-01_trial-1_self_induction_beta.nii.gz
-      sub-302_run-01_trial-2_self_induction_beta.nii.gz
-      sub-302_run-01_trial-3_self_induction_beta.nii.gz
-    other_induction/
-      sub-302_run-01_trial-1_other_induction_beta.nii.gz
-      sub-302_run-01_trial-2_other_induction_beta.nii.gz
-      sub-302_run-01_trial-3_other_induction_beta.nii.gz
-  run-02/
-    self_induction/
-      sub-302_run-02_trial-4_self_induction_beta.nii.gz
+#### sub-302/
+####  run-01/
+####    self_induction/
+####      sub-302_run-01_trial-1_self_induction_beta.nii.gz
+####      sub-302_run-01_trial-2_self_induction_beta.nii.gz
+####      sub-302_run-01_trial-3_self_induction_beta.nii.gz
+####    other_induction/
+####      sub-302_run-01_trial-1_other_induction_beta.nii.gz
+####      sub-302_run-01_trial-2_other_induction_beta.nii.gz
+####      sub-302_run-01_trial-3_other_induction_beta.nii.gz
+####  run-02/
+####    self_induction/
+####      sub-302_run-02_trial-4_self_induction_beta.nii.gz
 
 
 Copy the code below and create a file titled LSS_beta_L1.py
