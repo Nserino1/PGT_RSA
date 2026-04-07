@@ -1,8 +1,4 @@
 # Group Presentation
-## hi
-### hi
-#### hi
-
 This does this thing
 ```
 lihl
