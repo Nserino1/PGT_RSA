@@ -1,8 +1,7 @@
 # Group Presentation
 
 
-Thbdf;vasudbvsdkvb im doing this
-
+This does this thing
 ```
 lihl
 ```
