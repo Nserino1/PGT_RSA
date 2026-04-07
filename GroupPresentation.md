@@ -5,3 +5,182 @@ lihl
 ```
 
 <img width="298" height="161" alt="Screenshot 2026-04-07 at 2 54 07 PM" src="https://github.com/user-attachments/assets/b3188f77-a2e5-465c-b09f-04af54472f05" />
+
+
+
+
+
+
+
+
+
+
+### Running Level 1 analyses
+Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
+
+Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
+sub-302/
+  run-01/
+    self_induction/
+      sub-302_run-01_trial-1_self_induction_beta.nii.gz
+      sub-302_run-01_trial-2_self_induction_beta.nii.gz
+      sub-302_run-01_trial-3_self_induction_beta.nii.gz
+    other_induction/
+      sub-302_run-01_trial-1_other_induction_beta.nii.gz
+      sub-302_run-01_trial-2_other_induction_beta.nii.gz
+      sub-302_run-01_trial-3_other_induction_beta.nii.gz
+  run-02/
+    self_induction/
+      sub-302_run-02_trial-4_self_induction_beta.nii.gz
+
+
+Copy the code below and create a file titled LSS_beta_L1.py
+
+```
+import os
+import sys
+import numpy as np
+import pandas as pd
+from nilearn.glm.first_level import FirstLevelModel
+import time
+
+# Get subjects from command line
+if len(sys.argv) > 1:
+    subjects = sys.argv[1:]  # All arguments after script name
+else:
+    print("Usage: python3 test_lss_pgt.py sub-302 sub-303 sub-304 ...")
+    sys.exit(1)
+
+print(f"\n{'='*60}")
+print(f"LSS Beta Extraction")
+print(f"Processing {len(subjects)} subjects: {', '.join(subjects)}")
+print(f"Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"{'='*60}\n")
+
+base_dir = "/zpool/olsonlab/active_drive/ljhoffman/pgt"
+fmriprep_dir = f"{base_dir}/derivatives/fmriprep"
+tedana_dir = f"{base_dir}/derivatives/tedana"
+timing_dir = f"{base_dir}/sharepoint/time_data"
+confounds_base_dir = f"{base_dir}/derivatives/confounds/LSS"
+out_base_dir = f"{base_dir}/derivatives/RSA/lss_betas/v2/"
+
+runs = ["01", "02", "03", "04"]
+TR = 1.615
+
+def read_events(txt_file, trial_type):
+    arr = np.loadtxt(txt_file)
+    if arr.ndim == 1:
+        arr = arr[None, :]
+    return pd.DataFrame({
+        "onset": arr[:, 0],
+        "duration": arr[:, 1],
+        "trial_type": trial_type
+    })
+
+# Loop through subjects
+for subj in subjects:
+    print(f"\n{'#'*60}")
+    print(f"# SUBJECT: {subj}")
+    print(f"# Started: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'#'*60}\n")
+    
+    confounds_dir = f"{confounds_base_dir}/{subj}"
+    out_dir = f"{out_base_dir}/{subj}"
+    
+    self_trial_num = 1
+    other_trial_num = 1
+    
+    for run in runs:
+        print(f"\n{'='*60}")
+        print(f"Processing {subj} run-{run}")
+        print(f"{'='*60}")
+        
+        bold_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-PGT_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz"
+        mask_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-PGT_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-brain_mask.nii.gz"
+        confounds_file = f"{confounds_dir}/{subj}_task-PGT_run-{run}_desc-LSS_confounds.tsv"
+        
+        if not all(os.path.exists(f) for f in [bold_file, mask_file, confounds_file]):
+            print(f"WARNING: Missing files for run {run}, skipping")
+            print(f"  BOLD: {os.path.exists(bold_file)}")
+            print(f"  Mask: {os.path.exists(mask_file)}")
+            print(f"  Confounds: {os.path.exists(confounds_file)}")
+            continue
+
+        self_file = f"{timing_dir}/{subj}/run-{run}/self_induction.txt"
+        other_file = f"{timing_dir}/{subj}/run-{run}/other_induction.txt"
+
+        self_events = read_events(self_file, "self_induction")
+        other_events = read_events(other_file, "other_induction")
+        events = pd.concat([self_events, other_events], ignore_index=True).sort_values("onset").reset_index(drop=True)
+        
+        print(f"Found {len(self_events)} self trials and {len(other_events)} other trials")
+
+        confounds = pd.read_csv(confounds_file, sep="\t")
+        print(f"Using {confounds.shape[1]} confound regressors")
+
+        run_out = f"{out_dir}/run-{run}"
+        self_out = f"{run_out}/self_induction"
+        other_out = f"{run_out}/other_induction"
+        os.makedirs(self_out, exist_ok=True)
+        os.makedirs(other_out, exist_ok=True)
+
+        for i in range(len(events)):
+            trial = events.iloc[[i]].copy()
+            others = events.drop(i).copy()
+            cond = trial.iloc[0]["trial_type"]
+
+            trial["trial_type"] = "trial_of_interest"
+            others["trial_type"] = "other_trials"
+            lss_events = pd.concat([trial, others], ignore_index=True)
+            
+            model = FirstLevelModel(
+                t_r=TR,
+                hrf_model="spm",
+                drift_model="cosine",
+                high_pass=0.008,
+                smoothing_fwhm=None,
+                mask_img=mask_file,
+                signal_scaling=False,
+                minimize_memory=False
+            )
+
+            model.fit(run_imgs=bold_file, events=lss_events, confounds=confounds)
+            beta = model.compute_contrast("trial_of_interest", output_type="effect_size")
+
+            if cond == "self_induction":
+                out_file = f"{self_out}/{subj}_run-{run}_trial-{self_trial_num:02d}_self_induction_beta.nii.gz"
+                self_trial_num += 1
+            else:
+                out_file = f"{other_out}/{subj}_run-{run}_trial-{other_trial_num:02d}_other_induction_beta.nii.gz"
+                other_trial_num += 1
+
+            beta.to_filename(out_file)
+            print(f"  ✓ Trial {i+1}/{len(events)}: {os.path.basename(out_file)}")
+    
+    print(f"\n{'#'*60}")
+    print(f"# {subj} COMPLETE!")
+    print(f"# Generated {self_trial_num-1} self betas and {other_trial_num-1} other betas")
+    print(f"# Finished: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'#'*60}\n")
+
+print(f"\n{'='*60}")
+print(f"ALL SUBJECTS COMPLETE!")
+print(f"Finished at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"{'='*60}\n")
+```
+
+Paste the code below to execute the script
+```
+python ~/LSS_beta_L1.py
+```
+
+Let's take a look at an example subject:
+/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives/RSA/lss_betas/v2/sub-302/run-01/other_induction/sub-302_run-01_trial-01_other_induction_beta.nii.gz
+
+<img width="1917" height="885" alt="image" src="https://github.com/user-attachments/assets/e4d3834f-1ff1-482a-8c9d-bcd84b40f49c" />
+
+### Yay! we sucessfully ran level one, we can take these trial wise beta maps and then move onto further downstream analyses. This was done to run representational similarity analyses, but you can use this pipeline to get trial wise beta estimates for other pipelines as well. 
+
+
+
+
