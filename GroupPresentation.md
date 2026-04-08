@@ -1,9 +1,12 @@
 # Group Presentation
 
 
+## Table of Contents
+1. [fMRIprep](#Mcdaniel)
+2. [tedana](#Nicole)
+3. [Level 1 Analysis](#Ranesh)
 
-
-### Running Tedana
+### Running Tedana <a id='Nicole'></a>
 
 After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
 Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: true BOLD signal shows predictable T2* decay across echoes, while non-BOLD artifacts (motion, scanner drift, physiological noise) exhibit TE-independent patterns. This allows tedana to classify components as signal (accepted) or noise (rejected).
@@ -13,7 +16,7 @@ Script to run tedana
 
 
 
-### Running Level 1 analyses
+### Running Level 1 analyses <a id='Ranesh'></a>
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
 Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
