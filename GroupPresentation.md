@@ -14,6 +14,111 @@ Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: tr
 Script to run tedana
 - This Runs tedana on all 4 runs for each subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
 
+#### Tedana Script
+```
+#!/bin/bash
+
+# Run tedana for multiple subjects - all 4 runs each
+# Usage: bash tedana.sh
+
+# List all subjects to process
+SUBJECTS="308"
+
+echo "========================================="
+echo "Running tedana for subjects: ${SUBJECTS}"
+echo "Processing all 4 runs per subject"
+echo "5-minute break between subjects"
+echo "========================================="
+echo ""
+
+# Set base paths
+DERIVATIVES_DIR="/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives"
+
+# Loop through each subject
+for SUBJECT in ${SUBJECTS}
+do
+  echo ""
+  echo "========================================="
+  echo "Processing subject: ${SUBJECT}"
+  echo "========================================="
+  echo ""
+  
+  FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
+  TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
+  
+  # Create output directory
+  mkdir -p ${TEDANA_OUT}/func
+  
+  # Check if fMRIPrep outputs exist
+  if [ ! -d "${FMRIPREP_DIR}/func" ]; then
+    echo "⚠️  WARNING: fMRIPrep outputs not found for subject ${SUBJECT}, skipping..."
+    continue
+  fi
+  
+  # Process each run
+  for RUN in 4
+  do
+    RUN_FORMATTED=$(printf "%02d" ${RUN})
+    
+    echo ""
+    echo "=== Subject ${SUBJECT} - Run ${RUN} ==="
+    echo ""
+    
+    # Check if echo-1 exists
+    ECHO1="${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz"
+    
+    if [ ! -f "${ECHO1}" ]; then
+      echo "⚠️  WARNING: Run ${RUN} not found, skipping..."
+      continue
+    fi
+    
+    # Run tedana
+    tedana \
+      -d \
+        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
+        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-2_desc-preproc_bold.nii.gz \
+        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-3_desc-preproc_bold.nii.gz \
+        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-4_desc-preproc_bold.nii.gz \
+      -e 13.8 29.7 45.6 61.5 \
+      --mask ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_desc-brain_mask.nii.gz \
+      --out-dir ${TEDANA_OUT}/func/run-${RUN_FORMATTED} \
+      --prefix sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED} \
+      --convention bids \
+      --n-threads 16
+    
+    # Check if tedana succeeded
+    if [ $? -eq 0 ]; then
+      echo "✓ Run ${RUN} completed successfully"
+    else
+      echo "✗ Run ${RUN} FAILED"
+      exit 1
+    fi
+  done
+  
+  echo ""
+  echo "✓ Subject ${SUBJECT} completed (all 4 runs)"
+  echo ""
+  echo "Waiting 5 minutes before starting next subject..."
+  sleep 300  # 5 minutes
+  
+done
+
+echo ""
+echo "========================================="
+echo "✓ ALL SUBJECTS COMPLETED"
+echo "========================================="
+echo ""
+echo "Denoised outputs in: ${DERIVATIVES_DIR}/tedana/"
+```
+
+#### Run Tedana Script Command
+```
+bash ~ /tedana.sh
+```
+
+Great! Now that we have run tedana, we must pull the files we want to make confound files ADD LATER NICOLE
+
+
 ```
 #!/usr/bin/env python
 """
@@ -135,6 +240,13 @@ print(f"Output: {output_dir}/")
 print("="*60)
 ```
 
+Command
+```
+python ~/make_confounds_LSS.py
+```
+
+
+    
 ### Running Level 1 analyses <a id='Ranesh'></a>
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
