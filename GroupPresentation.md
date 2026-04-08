@@ -14,7 +14,126 @@ Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: tr
 Script to run tedana
 - This Runs tedana on all 4 runs for each subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
 
+```
+#!/usr/bin/env python
+"""
+Create confounds files optimized for LSS beta extraction.
+"""
 
+import os
+import pandas as pd
+from natsort import natsorted
+import re
+
+# FIXED: Use absolute paths
+base_dir = '/zpool/olsonlab/active_drive/ljhoffman/pgt'
+tedana_dir = f'{base_dir}/derivatives/tedana/'
+fmriprep_dir = f'{base_dir}/derivatives/fmriprep/'
+output_dir = f'{base_dir}/derivatives/confounds/LSS'
+
+# Find all tedana metrics files
+metric_files = natsorted([
+    os.path.join(root, f)
+    for root, dirs, files in os.walk(tedana_dir)
+    for f in files
+    if f.endswith("desc-tedana_metrics.tsv")
+])
+
+print(f"Found {len(metric_files)} runs to process")
+print("="*60)
+
+processed = 0
+skipped = 0
+
+for file in metric_files:
+    fname = os.path.basename(file)
+    run_dir = os.path.dirname(file)
+    
+    # Extract BIDS entities
+    sub_match = re.search(r'(sub-\d+)', fname)
+    task_match = re.search(r'_task-(.*?)_', fname)
+    run_match = re.search(r'_run-(\d+)', fname)
+    
+    if not all([sub_match, task_match, run_match]):
+        print(f"Could not parse BIDS entities from {fname}, skipping.")
+        skipped += 1
+        continue
+    
+    sub = sub_match.group(1)
+    task = task_match.group(1)
+    run = run_match.group(1)
+    
+    print(f"\n{sub} run-{run} task-{task}")
+    
+    # fMRIPrep confounds path
+    fmriprep_fname = (
+        f"{fmriprep_dir}{sub}/func/"
+        f"{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv"
+    )
+    
+    if not os.path.exists(fmriprep_fname):
+        print(f"  WARNING: fMRIPrep confounds not found")
+        skipped += 1
+        continue
+    
+    # Tedana ICA files
+    ica_mixing_fname = os.path.join(run_dir, f"{sub}_task-{task}_run-{run}_desc-ICA_mixing.tsv")
+    tedana_metrics_fname = file
+    
+    if not os.path.exists(ica_mixing_fname):
+        print(f"  WARNING: ICA mixing not found")
+        skipped += 1
+        continue
+    
+    # Read files
+    try:
+        fmriprep_confounds = pd.read_csv(fmriprep_fname, sep='\t')
+        ICA_mixing = pd.read_csv(ica_mixing_fname, sep='\t')
+        metrics = pd.read_csv(tedana_metrics_fname, sep='\t')
+    except Exception as e:
+        print(f"  ERROR reading files: {e}")
+        skipped += 1
+        continue
+    
+    # Extract rejected ICA component timeseries
+    try:
+        rejected_components = metrics.loc[metrics['classification'] == 'rejected', 'Component']
+        rejected_indices = rejected_components.str.replace('ICA_', '', regex=False).astype(int)
+        bad_components = ICA_mixing.iloc[:, rejected_indices]
+        bad_components.columns = [f"rejected_ICA_{i:02d}" for i in range(len(bad_components.columns))]
+    except Exception as e:
+        print(f"  WARNING: Could not extract rejected components: {e}")
+        bad_components = pd.DataFrame()
+    
+    # Select fMRIPrep confounds for LSS (NO cosine, NO NSS)
+    motion = ['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
+    acompcor = [f'a_comp_cor_{i:02d}' for i in range(6)]
+    fd = ['framewise_displacement']
+    
+    desired_cols = motion + acompcor + fd
+    filter_col = [c for c in desired_cols if c in fmriprep_confounds.columns]
+    selected_confounds = fmriprep_confounds[filter_col].fillna(0)
+    
+    # Combine fMRIPrep and tedana confounds
+    confounds_df = pd.concat([selected_confounds, bad_components], axis=1)
+    
+    # Output directory
+    outdir = f"{output_dir}/{sub}"
+    os.makedirs(outdir, exist_ok=True)
+    
+    outfname = f"{outdir}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv"
+    
+    # Save WITH headers
+    confounds_df.to_csv(outfname, index=False, header=True, sep='\t')
+    
+    print(f"  ✓ {confounds_df.shape[0]} timepoints × {confounds_df.shape[1]} regressors")
+    processed += 1
+
+print("\n" + "="*60)
+print(f"DONE! Processed: {processed}, Skipped: {skipped}")
+print(f"Output: {output_dir}/")
+print("="*60)
+```
 
 ### Running Level 1 analyses <a id='Ranesh'></a>
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
