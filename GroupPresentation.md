@@ -2,9 +2,9 @@
 
 
 ## Table of Contents
-1. [fMRIprep](#Mcdaniel)
-2. [tedana](#Nicole)
-3. [Level 1 Analysis](#Ranesh)
+1. [fMRIprep](#mcdaniel)
+2. [tedana](#nicole)
+3. [Level 1 Analysis](#ranesh)
 
 ### Running Tedana <a id='Nicole'></a>
 
