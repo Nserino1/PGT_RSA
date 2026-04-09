@@ -283,6 +283,7 @@ bash ~ /tedana.sh
 #### Tedana HTML report for 1 run of 1 sub
 
 <img width="914" height="515" alt="Screenshot 2026-04-09 at 11 55 09 AM" src="https://github.com/user-attachments/assets/6d2bba34-6b95-40b2-9bca-6f2aa4e5e52f" />
+Tedana ICA component classification showing accepted BOLD components (green) separated from rejected noise components (red) based on TE-dependence.
 
 
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
