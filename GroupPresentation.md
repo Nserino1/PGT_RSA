@@ -280,7 +280,8 @@ done
 bash ~ /tedana.sh
 ```
 
-
+#### Tedana HTML report for 1 run of 1 sub
+<img width="967" height="468" alt="Screenshot 2026-04-09 at 11 52 38 AM" src="https://github.com/user-attachments/assets/7b390fb7-a5bc-4f75-be60-5f39a36b85da" />
 
 
 
@@ -313,7 +314,7 @@ This may capture capture:
 - Scanner drift
 - Residual motion artifacts
 - Susceptibility distortions
-- Physiological noise not caught by aCompCor
+
 
 
 #### This is python script that combines confounds from fMRIprep and tedana. 
