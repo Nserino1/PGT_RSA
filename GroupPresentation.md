@@ -230,7 +230,6 @@ This notebook demonstrates the setup required to begin preprocessing a BIDS-form
 
 
 #
-
 # Running Tedana <a id='nicole'></a>
 
 After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
@@ -294,6 +293,7 @@ bash ~ /tedana.sh
 <img width="914" height="515" alt="Screenshot 2026-04-09 at 11 55 09 AM" src="https://github.com/user-attachments/assets/6d2bba34-6b95-40b2-9bca-6f2aa4e5e52f" />
 Tedana ICA component classification showing accepted BOLD components (green) separated from rejected noise components (red) based on TE-dependence.
 
+#
 # Make Combined Confounds File
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
 
@@ -396,7 +396,7 @@ TSV Output example
 
 
 
-    
+#
 # Running Level 1 analyses <a id='ranesh'></a>
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
