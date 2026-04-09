@@ -230,25 +230,23 @@ Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: tr
 Script to run tedana
 - This Runs tedana on all 4 runs for each subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
 
-#### Tedana Script
+#### Bash script to run tedana
 ```
 #!/bin/bash
-# Run tedana on multi-echo fMRI data from fMRIPrep
 
-# Subjects to process
+# List of subjects 
 SUBJECTS="302 303 304 305 306 307 308 309 310 311"
 
 # Paths
 DERIVATIVES_DIR="/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives"
 
-# Loop through subjects
+# For loop through subjects
 for SUBJECT in ${SUBJECTS}
 do
   echo "Processing subject: ${SUBJECT}"
   
   FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
   TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
-  
   mkdir -p ${TEDANA_OUT}/func
   
   # Process each run (1-4)
@@ -258,7 +256,7 @@ do
     
     echo "  Run ${RUN}..."
     
-    # Run tedana with 4 echoes
+    # Run tedana for all 4 echoes
     tedana \
       -d \
         ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
@@ -273,11 +271,8 @@ do
       --n-threads 16
   done
   
-  echo "✓ Subject ${SUBJECT} complete"
-  
 done
 
-echo "All subjects complete!"
 ```
 
 #### Run Tedana Script Command
@@ -293,6 +288,7 @@ bash ~ /tedana.sh
 
 
 Great! Now that we have run tedana, we must pull the files we want to make confound files ADD LATER NICOLE
+This is python script that combines confounds from fMRIprep and tedana. 
 
 
 
@@ -306,7 +302,6 @@ Great! Now that we have run tedana, we must pull the files we want to make confo
 
 ```
 #!/usr/bin/env python
-
 import os
 import pandas as pd
 from natsort import natsorted
@@ -351,7 +346,7 @@ for file in metric_files:
                     [f'a_comp_cor_{i:02d}' for i in range(6)] + ['framewise_displacement']
     fmriprep_confounds = fmriprep[confound_cols].fillna(0)
     
-    # Combine and save
+    # Combine and save as a tsv file
     confounds = pd.concat([fmriprep_confounds, rejected_ica], axis=1)
     os.makedirs(f"{output_dir}/{sub}", exist_ok=True)
     confounds.to_csv(f"{output_dir}/{sub}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv", sep='\t', index=False)
