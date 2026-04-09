@@ -321,7 +321,7 @@ done
 
 echo ""
 echo "========================================="
-echo "✓ ALL SUBJECTS COMPLETED"
+echo " ALL SUBJECTS COMPLETED"
 echo "========================================="
 echo ""
 echo "Denoised outputs in: ${DERIVATIVES_DIR}/tedana/"
@@ -405,9 +405,9 @@ for file in metric_files:
         skipped += 1
         continue
     
-    sub = sub_match.group(1)    # e.g., "sub-302"
-    task = task_match.group(1)  # e.g., "PGT"
-    run = run_match.group(1)    # e.g., "01"
+    sub = sub_match.group(1)    
+    task = task_match.group(1)  
+    run = run_match.group(1)    
     
     print(f"\n{sub} run-{run} task-{task}")
     
