@@ -379,7 +379,7 @@ TSV Output example
 <img width="963" height="179" alt="Screenshot 2026-04-09 at 11 33 32 AM" src="https://github.com/user-attachments/assets/fa2d692f-e590-43f3-898a-b01d42e07c85" />
 
     
-### Running Level 1 analyses <a id='ranesh'></a>
+# Running Level 1 analyses <a id='ranesh'></a>
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
 Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
