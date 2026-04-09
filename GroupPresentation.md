@@ -222,6 +222,15 @@ This notebook demonstrates the setup required to begin preprocessing a BIDS-form
 
 
 
+
+
+
+
+
+
+
+
+
 # Running Tedana <a id='nicole'></a>
 
 After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
@@ -377,6 +386,15 @@ python ~/make_confounds_LSS.py
 
 TSV Output example
 <img width="963" height="179" alt="Screenshot 2026-04-09 at 11 33 32 AM" src="https://github.com/user-attachments/assets/fa2d692f-e590-43f3-898a-b01d42e07c85" />
+
+
+
+
+
+
+
+
+
 
     
 # Running Level 1 analyses <a id='ranesh'></a>
