@@ -6,7 +6,7 @@
 2. [tedana](#nicole)
 3. [Level 1 Analysis](#ranesh)
 
-# fMRIPrep on ds003507 in Neurodesk
+# fMRIPrep
 
 ## Introduction
 
