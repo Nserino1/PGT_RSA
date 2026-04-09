@@ -10,7 +10,7 @@
 
 ## Introduction
 
-This notebook documents the first stages of preprocessing for the OpenNeuro dataset `ds003507` using `fMRIPrep` in Neurodesk. The goal of this workflow is to demonstrate how to prepare one subject's BIDS-formatted data and launch preprocessing for a single participant. 
+This notebook documents the first stages of preprocessing for the OpenNeuro dataset `ds003507` using `fMRIPrep`. The goal of this workflow is to demonstrate how to prepare one subject's BIDS-formatted data and launch preprocessing for a single participant. 
 
 In this notebook, I begin the preprocessing workflow for the OpenNeuro dataset `ds003507`, titled *Audiovisual Valence Congruence*. The notebook is based on the course demo for `fMRIPrep` and is adapted for my selected dataset and subject. For this assignment, I focus only on the first three major steps: loading the required tools and libraries, preparing the data, and running `fMRIPrep` for one subject.
 
