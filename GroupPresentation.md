@@ -233,62 +233,32 @@ Script to run tedana
 #### Tedana Script
 ```
 #!/bin/bash
+# Run tedana on multi-echo fMRI data from fMRIPrep
 
-# Run tedana for multiple subjects - all 4 runs each
-# Usage: bash tedana.sh
+# Subjects to process
+SUBJECTS="302 303 304 305 306 307 308 309 310 311"
 
-# List all subjects to process
-SUBJECTS="308"
-
-echo "========================================="
-echo "Running tedana for subjects: ${SUBJECTS}"
-echo "Processing all 4 runs per subject"
-echo "5-minute break between subjects"
-echo "========================================="
-echo ""
-
-# Set base paths
+# Paths
 DERIVATIVES_DIR="/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives"
 
-# Loop through each subject
+# Loop through subjects
 for SUBJECT in ${SUBJECTS}
 do
-  echo ""
-  echo "========================================="
   echo "Processing subject: ${SUBJECT}"
-  echo "========================================="
-  echo ""
   
   FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
   TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
   
-  # Create output directory
   mkdir -p ${TEDANA_OUT}/func
   
-  # Check if fMRIPrep outputs exist
-  if [ ! -d "${FMRIPREP_DIR}/func" ]; then
-    echo "⚠️  WARNING: fMRIPrep outputs not found for subject ${SUBJECT}, skipping..."
-    continue
-  fi
-  
-  # Process each run
-  for RUN in 4
+  # Process each run (1-4)
+  for RUN in 1 2 3 4
   do
     RUN_FORMATTED=$(printf "%02d" ${RUN})
     
-    echo ""
-    echo "=== Subject ${SUBJECT} - Run ${RUN} ==="
-    echo ""
+    echo "  Run ${RUN}..."
     
-    # Check if echo-1 exists
-    ECHO1="${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz"
-    
-    if [ ! -f "${ECHO1}" ]; then
-      echo "⚠️  WARNING: Run ${RUN} not found, skipping..."
-      continue
-    fi
-    
-    # Run tedana
+    # Run tedana with 4 echoes
     tedana \
       -d \
         ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
@@ -301,30 +271,13 @@ do
       --prefix sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED} \
       --convention bids \
       --n-threads 16
-    
-    # Check if tedana succeeded
-    if [ $? -eq 0 ]; then
-      echo "✓ Run ${RUN} completed successfully"
-    else
-      echo "✗ Run ${RUN} FAILED"
-      exit 1
-    fi
   done
   
-  echo ""
-  echo "✓ Subject ${SUBJECT} completed (all 4 runs)"
-  echo ""
-  echo "Waiting 5 minutes before starting next subject..."
-  sleep 300  # 5 minutes
+  echo "✓ Subject ${SUBJECT} complete"
   
 done
 
-echo ""
-echo "========================================="
-echo " ALL SUBJECTS COMPLETED"
-echo "========================================="
-echo ""
-echo "Denoised outputs in: ${DERIVATIVES_DIR}/tedana/"
+echo "All subjects complete!"
 ```
 
 #### Run Tedana Script Command
@@ -359,19 +312,13 @@ import pandas as pd
 from natsort import natsorted
 import re
 
-# ============================================================
-# PATHS
-# ============================================================
+# Paths
 base_dir = '/zpool/olsonlab/active_drive/ljhoffman/pgt'
-tedana_dir = f'{base_dir}/derivatives/tedana/'      # Where tedana outputs live
-fmriprep_dir = f'{base_dir}/derivatives/fmriprep/'  # Where fMRIPrep outputs live
-output_dir = f'{base_dir}/derivatives/confounds/LSS'  # Where to save LSS confounds
+tedana_dir = f'{base_dir}/derivatives/tedana/'
+fmriprep_dir = f'{base_dir}/derivatives/fmriprep/'
+output_dir = f'{base_dir}/derivatives/confounds/LSS'
 
-# ============================================================
-# FIND ALL TEDANA METRICS FILES
-# ============================================================
-# Each metrics file contains ICA component classifications (accepted vs rejected)
-# We use these to identify which ICA timeseries are noise
+# Find all tedana metrics files
 metric_files = natsorted([
     os.path.join(root, f)
     for root, dirs, files in os.walk(tedana_dir)
@@ -379,154 +326,35 @@ metric_files = natsorted([
     if f.endswith("desc-tedana_metrics.tsv")
 ])
 
-print(f"Found {len(metric_files)} runs to process")
-print("="*60)
-
-processed = 0
-skipped = 0
-
-# ============================================================
-# PROCESS EACH RUN
-# ============================================================
+# Process each run
 for file in metric_files:
     fname = os.path.basename(file)
     run_dir = os.path.dirname(file)
     
-    # ------------------------------------------------------------
-    # Extract subject, task, run from filename
-    # Example: sub-302_task-PGT_run-01_desc-tedana_metrics.tsv
-    # ------------------------------------------------------------
-    sub_match = re.search(r'(sub-\d+)', fname)
-    task_match = re.search(r'_task-(.*?)_', fname)
-    run_match = re.search(r'_run-(\d+)', fname)
+    # Parse filename
+    sub = re.search(r'(sub-\d+)', fname).group(1)
+    task = re.search(r'_task-(.*?)_', fname).group(1)
+    run = re.search(r'_run-(\d+)', fname).group(1)
     
-    if not all([sub_match, task_match, run_match]):
-        print(f"Could not parse BIDS entities from {fname}, skipping.")
-        skipped += 1
-        continue
+    # Read files
+    fmriprep = pd.read_csv(f"{fmriprep_dir}{sub}/func/{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv", sep='\t')
+    mixing = pd.read_csv(os.path.join(run_dir, f"{sub}_task-{task}_run-{run}_desc-ICA_mixing.tsv"), sep='\t')
+    metrics = pd.read_csv(file, sep='\t')
     
-    sub = sub_match.group(1)    
-    task = task_match.group(1)  
-    run = run_match.group(1)    
+    # Extract rejected ICA components
+    rejected = metrics[metrics['classification'] == 'rejected']['Component']
+    rejected_idx = rejected.str.replace('ICA_', '').astype(int)
+    rejected_ica = mixing.iloc[:, rejected_idx]
     
-    print(f"\n{sub} run-{run} task-{task}")
+    # Select fMRIPrep confounds
+    confound_cols = ['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z'] + \
+                    [f'a_comp_cor_{i:02d}' for i in range(6)] + ['framewise_displacement']
+    fmriprep_confounds = fmriprep[confound_cols].fillna(0)
     
-    # ------------------------------------------------------------
-    # DEFINE FILE PATHS
-    # ------------------------------------------------------------
-    # fMRIPrep confounds: motion, aCompCor, FD, cosine, NSS, etc.
-    fmriprep_fname = (
-        f"{fmriprep_dir}{sub}/func/"
-        f"{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv"
-    )
-    
-    # Tedana ICA mixing matrix: timeseries for each ICA component
-    ica_mixing_fname = os.path.join(run_dir, f"{sub}_task-{task}_run-{run}_desc-ICA_mixing.tsv")
-    
-    # Tedana metrics: classifications of each ICA component (accepted/rejected)
-    tedana_metrics_fname = file
-    
-    # ------------------------------------------------------------
-    # CHECK FILES EXIST
-    # ------------------------------------------------------------
-    if not os.path.exists(fmriprep_fname):
-        print(f"  WARNING: fMRIPrep confounds not found")
-        skipped += 1
-        continue
-    
-    if not os.path.exists(ica_mixing_fname):
-        print(f"  WARNING: ICA mixing not found")
-        skipped += 1
-        continue
-    
-    # ------------------------------------------------------------
-    # READ INPUT FILES
-    # ------------------------------------------------------------
-    try:
-        # fMRIPrep confounds: huge file with ~100+ columns
-        fmriprep_confounds = pd.read_csv(fmriprep_fname, sep='\t')
-        
-        # ICA mixing: timeseries for each component (215 timepoints × ~50-100 components)
-        ICA_mixing = pd.read_csv(ica_mixing_fname, sep='\t')
-        
-        # Tedana metrics: classifications for each component
-        metrics = pd.read_csv(tedana_metrics_fname, sep='\t')
-    except Exception as e:
-        print(f"  ERROR reading files: {e}")
-        skipped += 1
-        continue
-    
-    # ------------------------------------------------------------
-    # EXTRACT REJECTED ICA COMPONENTS (NOISE)
-    # ------------------------------------------------------------
-    # Tedana classifies components as 'accepted' (BOLD) or 'rejected' (noise)
-    # We want the REJECTED components as confound regressors
-    try:
-        # Find components classified as 'rejected'
-        rejected_components = metrics.loc[metrics['classification'] == 'rejected', 'Component']
-        
-        # Extract their indices (e.g., 'ICA_05' -> 5)
-        rejected_indices = rejected_components.str.replace('ICA_', '', regex=False).astype(int)
-        
-        # Get the timeseries for these rejected components
-        bad_components = ICA_mixing.iloc[:, rejected_indices]
-        
-        # Rename columns to be descriptive
-        bad_components.columns = [f"rejected_ICA_{i:02d}" for i in range(len(bad_components.columns))]
-    except Exception as e:
-        print(f"  WARNING: Could not extract rejected components: {e}")
-        bad_components = pd.DataFrame()
-    
-    # ------------------------------------------------------------
-    # SELECT fMRIPrep CONFOUNDS (MOTION + aCompCor + FD)
-    # ------------------------------------------------------------
-    # Motion parameters (6): Head movement in 3 translations + 3 rotations
-    # WHY: Even small head movements create spurious correlations
-    motion = ['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
-    
-    # aCompCor (6): Anatomical CompCor - noise from CSF/WM
-    # WHY: Captures physiological noise (cardiac, respiratory) without needing external monitors
-    acompcor = [f'a_comp_cor_{i:02d}' for i in range(6)]
-    
-    # Framewise displacement (1): Frame-to-frame motion metric
-    # WHY: Identifies volumes with sudden motion spikes
-    fd = ['framewise_displacement']
-    
-    desired_cols = motion + acompcor + fd
-    
-    # Filter to only columns that actually exist (some subjects might be missing some)
-    filter_col = [c for c in desired_cols if c in fmriprep_confounds.columns]
-    
-    # Extract these columns and fill any NaN values with 0
-    selected_confounds = fmriprep_confounds[filter_col].fillna(0)
-    
-    # ------------------------------------------------------------
-    # COMBINE fMRIPrep + TEDANA CONFOUNDS
-    # ------------------------------------------------------------
-    # Final confounds = motion + aCompCor + FD + rejected ICA components
-    confounds_df = pd.concat([selected_confounds, bad_components], axis=1)
-    
-    # ------------------------------------------------------------
-    # SAVE OUTPUT
-    # ------------------------------------------------------------
-    outdir = f"{output_dir}/{sub}"
-    os.makedirs(outdir, exist_ok=True)
-    
-    outfname = f"{outdir}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv"
-    
-    # Save WITH headers (important for LSS script to read column names)
-    confounds_df.to_csv(outfname, index=False, header=True, sep='\t')
-    
-    print(f"  ✓ {confounds_df.shape[0]} timepoints × {confounds_df.shape[1]} regressors")
-    processed += 1
-
-# ============================================================
-# SUMMARY
-# ============================================================
-print("\n" + "="*60)
-print(f"DONE! Processed: {processed}, Skipped: {skipped}")
-print(f"Output: {output_dir}/")
-print("="*60)
+    # Combine and save
+    confounds = pd.concat([fmriprep_confounds, rejected_ica], axis=1)
+    os.makedirs(f"{output_dir}/{sub}", exist_ok=True)
+    confounds.to_csv(f"{output_dir}/{sub}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv", sep='\t', index=False)
 ```
 
 Command
