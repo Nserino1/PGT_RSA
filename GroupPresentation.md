@@ -352,11 +352,14 @@ for file in metric_files:
     confounds.to_csv(f"{output_dir}/{sub}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv", sep='\t', index=False)
 ```
 
-Command
+Command to Run This Python Script
+- activate your conda environment first
 ```
 python ~/make_confounds_LSS.py
 ```
 
+TSV Output example
+<img width="963" height="179" alt="Screenshot 2026-04-09 at 11 33 32 AM" src="https://github.com/user-attachments/assets/fa2d692f-e590-43f3-898a-b01d42e07c85" />
 
     
 ### Running Level 1 analyses <a id='ranesh'></a>
