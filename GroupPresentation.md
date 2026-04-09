@@ -281,11 +281,8 @@ bash ~ /tedana.sh
 ```
 
 #### Tedana HTML report for 1 run of 1 sub
-<img width="967" height="468" alt="Screenshot 2026-04-09 at 11 52 38 AM" src="https://github.com/user-attachments/assets/7b390fb7-a5bc-4f75-be60-5f39a36b85da" />
 
-
-
-
+<img width="914" height="515" alt="Screenshot 2026-04-09 at 11 55 09 AM" src="https://github.com/user-attachments/assets/6d2bba34-6b95-40b2-9bca-6f2aa4e5e52f" />
 
 
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
