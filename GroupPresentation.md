@@ -222,7 +222,7 @@ This notebook demonstrates the setup required to begin preprocessing a BIDS-form
 
 
 
-### Running Tedana <a id='nicole'></a>
+# Running Tedana <a id='nicole'></a>
 
 After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
 Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: true BOLD signal shows predictable T2* decay across echoes, while non-BOLD artifacts (motion, scanner drift, physiological noise) exhibit TE-independent patterns. This allows tedana to classify components as signal (accepted) or noise (rejected).
@@ -285,7 +285,7 @@ bash ~ /tedana.sh
 <img width="914" height="515" alt="Screenshot 2026-04-09 at 11 55 09 AM" src="https://github.com/user-attachments/assets/6d2bba34-6b95-40b2-9bca-6f2aa4e5e52f" />
 Tedana ICA component classification showing accepted BOLD components (green) separated from rejected noise components (red) based on TE-dependence.
 
-
+# Make Combined Confounds File
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
 
 
