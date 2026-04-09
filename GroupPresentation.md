@@ -290,7 +290,7 @@ bash ~ /tedana.sh
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
 
 
-### Confounds from fMRIPrep:
+#### Confounds from fMRIPrep:
 1. Motion Parameters:
 trans_x, trans_y, trans_z - Translation (mm) in X, Y, Z directions
 rot_x, rot_y, rot_z - Rotation (radians) around X, Y, Z axes
@@ -303,33 +303,20 @@ Extracted from CSF/white matter masks. Captures physiological noise (cardiac, re
 framewise_displacement - Frame-to-frame motion metric (Power 2012)
 Sum of absolute displacement across all 6 motion parameters
 
-### Confounds from Tedana:
+#### Confounds from Tedana:
 4. Rejected ICA Components:
 rejected_ICA_00, rejected_ICA_01, rejected_ICA_02, etc.
 ICA components tedana classified as non-BOLD noise
 
 This may capture capture:
+- Multi-echo specific artifacts
 - Scanner drift
 - Residual motion artifacts
 - Susceptibility distortions
 - Physiological noise not caught by aCompCor
-- Multi-echo specific artifacts
 
 
-This script pulls motion parameters, aCompCor, and framewise displacement from fMRIPrep, then adds the rejected ICA components from tedana. It excludes confounds like cosine drift because nilearn's FirstLevelModel handles that automatically. The result is a streamlined confound file optimized for LSS beta extraction—one file per run that contains all the noise regressors we need., we must pull the files we want to make confound files ADD LATER NICOLE
-
-
-This is python script that combines confounds from fMRIprep and tedana. 
-
-
-
-
-
-
-
-
-
-
+#### This is python script that combines confounds from fMRIprep and tedana. 
 
 ```
 #!/usr/bin/env python
