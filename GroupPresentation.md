@@ -6,6 +6,222 @@
 2. [tedana](#nicole)
 3. [Level 1 Analysis](#ranesh)
 
+# fMRIPrep on ds003507 in Neurodesk
+
+## Introduction
+
+This notebook documents the first stages of preprocessing for the OpenNeuro dataset `ds003507` using `fMRIPrep` in Neurodesk. The goal of this workflow is to demonstrate how to prepare one subject's BIDS-formatted data and launch preprocessing for a single participant. 
+
+In this notebook, I begin the preprocessing workflow for the OpenNeuro dataset `ds003507`, titled *Audiovisual Valence Congruence*. The notebook is based on the course demo for `fMRIPrep` and is adapted for my selected dataset and subject. For this assignment, I focus only on the first three major steps: loading the required tools and libraries, preparing the data, and running `fMRIPrep` for one subject.
+
+This step is important because preprocessing organizes and standardizes the raw MRI data before later statistical analysis. By running `fMRIPrep`, I am beginning the process of correcting, aligning, and preparing the anatomical and functional data in a way that will support later analysis in FSL and related neuroimaging tools.
+
+## Workflow Overview
+
+This notebook is organized into three main sections:
+
+1. **Load software tools and import Python libraries**  
+   In this section, I load the Neurodesk software tools required for preprocessing and import the Python libraries needed for file handling and notebook organization.
+
+2. **Data preparation**  
+   In this section, I create a working directory structure, install the dataset using DataLad, and download one full subject so that the anatomical, functional, and field map files are all available for preprocessing.
+
+3. **Run fMRIPrep for one subject**  
+   In this section, I launch `fMRIPrep` for `sub-01`, directing the outputs to a derivatives folder and using a scratch working directory for temporary processing files.
+
+Dataset used: `ds003507`  
+Selected subject: `sub-01`
+
+## 1. Load software tools and import Python libraries
+
+In this section, I load the software modules needed for the preprocessing workflow and import the Python packages used to manage paths, inspect files, and organize notebook outputs. This ensures that the environment is ready before preparing the dataset and launching `fMRIPrep`.
+
+```python
+import module
+await module.load('fmriprep/25.2.5')
+await module.load('fsl/6.0.7.16')
+await module.list()
+```
+
+Expected output:
+
+```python
+['fmriprep/25.2.5', 'fsl/6.0.7.16']
+```
+
+```python
+!pip install pandas ipyniivue
+```
+
+```python
+from pathlib import Path
+import os
+import glob
+import pandas as pd
+from IPython.display import display, Markdown, Image
+
+base_dir = Path.home() / "ds003507_fmriprep_example"
+print(base_dir)
+```
+
+Expected output:
+
+```python
+/home/jovyan/ds003507_fmriprep_example
+```
+
+## 2. Data preparation
+
+In this section, I prepare a local working directory for the preprocessing example. I create folders for the BIDS dataset, derivatives, and scratch files. I then install the OpenNeuro dataset `ds003507` using DataLad and recursively download `sub-01` so that all required anatomical, functional, and field map files are available for preprocessing.
+
+We will keep everything for this example in one folder directly under the home directory:
+
+`~/ds003507_fmriprep_example`
+
+Inside that folder, we will make a few subdirectories:
+
+- `bids/` for the OpenNeuro dataset  
+- `derivatives/` for fMRIPrep output  
+- `scratch/` for temporary working files
+
+### Prepare folders and download one full subject
+
+The recursive download of `sub-01` is important because `fMRIPrep` may require multiple file types for preprocessing, including anatomical images, functional runs, and field map images. Downloading the full subject ensures that the subject's data are locally available and organized in valid BIDS structure before preprocessing begins.
+
+```bash
+%%bash
+set -e
+
+EXAMPLE_DIR="$HOME/ds003507_fmriprep_example"
+
+mkdir -p "$EXAMPLE_DIR"
+cd "$EXAMPLE_DIR"
+
+mkdir -p bids derivatives scratch
+
+cd bids
+
+# Install dataset skeleton if needed
+if [ ! -d ds003507 ]; then
+  datalad install https://github.com/OpenNeuroDatasets/ds003507.git
+fi
+
+cd ds003507
+
+# Get the full subject recursively so fMRIPrep has anat, func, and fmap files
+datalad get -r sub-01
+```
+
+Representative output:
+
+```text
+[INFO] Ensuring presence of Dataset(/home/jovyan/ds003507_fmriprep_example/bids/ds003507) to get /home/jovyan/ds003507_fmriprep_example/bids/ds003507/sub-01
+```
+
+### Confirm the subject files are present
+
+For this example, I am preprocessing:
+
+- **subject**: `01`
+
+This dataset includes anatomical, functional, and fieldmap files for the subject, so downloading the full subject recursively is the simplest way to prepare for `fMRIPrep`.
+
+```python
+!tree -L 3 ~/ds003507_fmriprep_example/bids/ds003507/sub-01
+```
+
+## 3. Run fMRIPrep for one subject
+
+In this section, I run `fMRIPrep` on `sub-01`. The preprocessing outputs are directed to the `derivatives/fmriprep` folder, and temporary working files are written to a scratch directory. For this class workflow, I use settings that are appropriate for a lighter demonstration run, including skipping BIDS validation in this environment and turning off FreeSurfer's full `recon-all` step.
+
+The next cells run `fMRIPrep` on one participant and write the outputs under:
+
+`~/ds003507_fmriprep_example/derivatives/fmriprep`
+
+Notes:
+- the FreeSurfer license file should exist at `~/.license`
+- this command may take a long time
+- `--skip-bids-validation` is used to avoid validator issues in this environment
+- `--fs-no-reconall` keeps the run lighter for class purposes
+
+```python
+!ls -l ~/.license
+```
+
+### Run fMRIPrep for `sub-01`
+
+The `fMRIPrep` command takes the BIDS dataset as input and preprocesses one selected subject. At a high level, this step prepares the anatomical and functional MRI data so they can be used in later analyses. The outputs generated by `fMRIPrep` typically include preprocessed BOLD images, confound regressors, and an HTML report summarizing the preprocessing workflow and image alignment quality.
+
+```bash
+%%bash
+set -e
+
+EXAMPLE_DIR="$HOME/ds003507_fmriprep_example"
+
+sub=01
+BIDS_DIR="$EXAMPLE_DIR/bids/ds003507"
+OUT_DIR="$EXAMPLE_DIR/derivatives/fmriprep"
+WORK_DIR="$EXAMPLE_DIR/scratch/fmriprep_work"
+FS_LIC="$HOME/.license"
+
+mkdir -p "$OUT_DIR" "$WORK_DIR"
+
+export OMP_NUM_THREADS=1
+export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+
+fmriprep \
+  "$BIDS_DIR" \
+  "$OUT_DIR" \
+  participant \
+  --participant-label "$sub" \
+  --stop-on-first-crash \
+  --skip-bids-validation \
+  --fs-license-file "$FS_LIC" \
+  --fs-no-reconall \
+  --output-spaces MNI152NLin6Asym:res-2 \
+  --nthreads 8 \
+  --omp-nthreads 1 \
+  --mem-mb 20000 \
+  -w "$WORK_DIR"
+```
+
+Representative output begins like this:
+
+```text
+260409-01:17:54,810 nipype.workflow IMPORTANT:
+     Running fMRIPrep version 25.2.5
+```
+
+### Find the main output files after fMRIPrep finishes
+
+After `fMRIPrep` finishes, the derivatives folder should contain preprocessed functional images, confound files, and an HTML report for the subject. These outputs will be used in later steps of the class workflow to inspect preprocessing quality and support first-level analysis in FSL.
+
+```python
+!find ~/ds003507_fmriprep_example/derivatives/fmriprep -name "sub-01.html"
+!find ~/ds003507_fmriprep_example/derivatives/fmriprep -name "*desc-preproc_bold.nii.gz"
+!find ~/ds003507_fmriprep_example/derivatives/fmriprep -name "*desc-confounds_timeseries.tsv"
+```
+
+Representative output:
+
+```text
+/home/jovyan/ds003507_fmriprep_example/derivatives/fmriprep/sub-01.html
+/home/jovyan/ds003507_fmriprep_example/derivatives/fmriprep/sub-01/func/sub-01_task-affect_run-2_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz
+/home/jovyan/ds003507_fmriprep_example/derivatives/fmriprep/sub-01/func/sub-01_task-affect_run-2_desc-confounds_timeseries.tsv
+```
+
+### Display the fMRIPrep HTML report
+![unnamed](https://github.com/user-attachments/assets/2c475fde-f0e4-4289-bda4-0f571cc6bbc4)
+
+
+## Summary
+
+In this notebook, I completed the first three steps of the preprocessing workflow for the OpenNeuro dataset `ds003507` in Neurodesk. I loaded the required software tools and Python libraries, prepared the dataset by installing it with DataLad and downloading one full subject, and ran `fMRIPrep` for `sub-01`.
+
+This notebook demonstrates the setup required to begin preprocessing a BIDS-formatted fMRI dataset. Even before later FEAT analysis, these steps are important because they establish the dataset structure, confirm subject-level data availability, and begin standardized preprocessing for downstream analysis.
+
+
+
 ### Running Tedana <a id='nicole'></a>
 
 After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
