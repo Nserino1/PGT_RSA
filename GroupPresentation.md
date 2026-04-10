@@ -568,7 +568,7 @@ python lss_beta_extraction.py sub-## sub-##
 ```
 
 Expected output:
-
+```
 derivatives/lss_betas/
 └── sub-302/
     └── run-01/
@@ -579,7 +579,7 @@ derivatives/lss_betas/
         └── condition2/
             ├── sub-302_run-01_trial-01_condition2_beta.nii.gz
             └── ...
-
+```
 
 Let's take a look at an example subject:
 /zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives/RSA/lss_betas/v2/sub-302/run-01/other_induction/sub-302_run-01_trial-01_other_induction_beta.nii.gz
