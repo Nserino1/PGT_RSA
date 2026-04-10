@@ -12,7 +12,9 @@ Date: April 10th, 2026
 
 
 ### How to Use This Pipeline with Your Own Data:
-This pipeline can be adapted for any multi-echo fMRI dataset. To use these scripts with your own data, you'll need to update file paths, subject IDs, task names, and parameters specific to your acquisition.What you'll need to edit:
+This pipeline can be adapted for any multi-echo fMRI dataset. To use these scripts with your own data, you'll need to update file paths, subject IDs, task names, and parameters specific to your acquisition.
+
+What you'll need to edit:
 
 - File paths: Update all directory paths to point to your data
 - Subject IDs: Replace our subject numbers (302-311) with yours
