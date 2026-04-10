@@ -1,5 +1,18 @@
 # Group Presentation
 
+Using This Pipeline with Your Own Data:
+This pipeline can be adapted for any multi-echo fMRI dataset. To use these scripts with your own data, you'll need to update file paths, subject IDs, task names, and parameters specific to your acquisition.What you'll need to edit:
+
+File paths: Update all directory paths to point to your data
+Subject IDs: Replace our subject numbers (302-311) with yours
+Task name: Change task-PGT to your task identifier
+Echo times: Update the -e flag in tedana to match your TEs
+Condition names: Replace self_induction and other_induction with your conditions
+Acquisition parameters: Update TR, number of runs, smoothing preferences
+Throughout the scripts below, look for # EDIT THIS comments indicating what needs to be customized for your dataset. The core logic remains the same—only the specifics of your data need to change.
+
+Note: We do not create timing files in this script. You must prepare your own 3-column timing files before running LSS beta extraction.
+
 
 ## Table of Contents
 1. [fMRIprep](#mcdaniel)
