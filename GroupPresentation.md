@@ -242,33 +242,35 @@ Script to run tedana
 ```
 #!/bin/bash
 
-# Example of a single subject
+# EDIT THIS: Your subject ID (just the number, not "sub-")
 SUBJECT="304"
 
-# Paths
-DERIVATIVES_DIR="/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives"
+# EDIT THIS: Path to your derivatives directory
+DERIVATIVES_DIR="/path/to/your/derivatives"
+
 FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
 TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
 mkdir -p ${TEDANA_OUT}/func
 
-# Process each run (1-4)
+# EDIT THIS: Adjust to your number of runs (e.g., 1 2 3 for 3 runs)
 for RUN in 1 2 3 4
 do
   RUN_FORMATTED=$(printf "%02d" ${RUN})
   
-  echo "  Run ${RUN}..."
+  echo "Processing run ${RUN}..."
   
-  # Run tedana for all 4 echoes
+  # EDIT THIS: Replace "task-PGT" with your task name
+  # EDIT THIS: Update echo times (-e flag) to match your acquisition
   tedana \
     -d \
-      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
-      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-2_desc-preproc_bold.nii.gz \
-      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-3_desc-preproc_bold.nii.gz \
-      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-4_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED}_echo-2_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED}_echo-3_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED}_echo-4_desc-preproc_bold.nii.gz \
     -e 13.8 29.7 45.6 61.5 \
-    --mask ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_desc-brain_mask.nii.gz \
+    --mask ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED}_desc-brain_mask.nii.gz \
     --out-dir ${TEDANA_OUT}/func/run-${RUN_FORMATTED} \
-    --prefix sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED} \
+    --prefix sub-${SUBJECT}_task-YOUR_TASK_run-${RUN_FORMATTED} \
     --convention bids \
     --n-threads 16
 done
@@ -278,7 +280,7 @@ echo "Subject ${SUBJECT} complete!"
 
 #### Run Tedana Script Command
 ```
-bash ~ /tedana.sh
+bash /path/to/your/tedana_script.sh
 ```
 
 #### Tedana HTML report for 1 run of 1 sub
@@ -319,6 +321,13 @@ This may capture capture:
 
 #### This is python script that combines confounds from fMRIprep and tedana. 
 
+
+Install required packages (if needed):
+```
+pip install pandas natsort
+```
+
+
 ```
 #!/usr/bin/env python
 import os
@@ -326,8 +335,8 @@ import pandas as pd
 from natsort import natsorted
 import re
 
-# Paths
-base_dir = '/zpool/olsonlab/active_drive/ljhoffman/pgt'
+# EDIT THIS: Path to your project directory
+base_dir = '/path/to/your/project'
 tedana_dir = f'{base_dir}/derivatives/tedana/'
 fmriprep_dir = f'{base_dir}/derivatives/fmriprep/'
 output_dir = f'{base_dir}/derivatives/confounds/LSS'
@@ -340,20 +349,28 @@ metric_files = natsorted([
     if f.endswith("desc-tedana_metrics.tsv")
 ])
 
+print(f"Found {len(metric_files)} runs to process\n")
+
 # Process each run
 for file in metric_files:
     fname = os.path.basename(file)
     run_dir = os.path.dirname(file)
     
-    # Parse filename
+    # Parse filename (assumes BIDS naming: sub-XXX_task-XXX_run-XX)
     sub = re.search(r'(sub-\d+)', fname).group(1)
     task = re.search(r'_task-(.*?)_', fname).group(1)
     run = re.search(r'_run-(\d+)', fname).group(1)
     
+    print(f"Processing {sub} run-{run} task-{task}")
+    
     # Read files
-    fmriprep = pd.read_csv(f"{fmriprep_dir}{sub}/func/{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv", sep='\t')
-    mixing = pd.read_csv(os.path.join(run_dir, f"{sub}_task-{task}_run-{run}_desc-ICA_mixing.tsv"), sep='\t')
-    metrics = pd.read_csv(file, sep='\t')
+    fmriprep_file = f"{fmriprep_dir}{sub}/func/{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv"
+    mixing_file = os.path.join(run_dir, f"{sub}_task-{task}_run-{run}_desc-ICA_mixing.tsv")
+    metrics_file = file
+    
+    fmriprep = pd.read_csv(fmriprep_file, sep='\t')
+    mixing = pd.read_csv(mixing_file, sep='\t')
+    metrics = pd.read_csv(metrics_file, sep='\t')
     
     # Extract rejected ICA components
     rejected = metrics[metrics['classification'] == 'rejected']['Component']
@@ -361,20 +378,29 @@ for file in metric_files:
     rejected_ica = mixing.iloc[:, rejected_idx]
     
     # Select fMRIPrep confounds
+    # EDIT THIS: Adjust number of aCompCor components if needed (we use 6)
     confound_cols = ['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z'] + \
-                    [f'a_comp_cor_{i:02d}' for i in range(6)] + ['framewise_displacement']
+                    [f'a_comp_cor_{i:02d}' for i in range(6)] + \
+                    ['framewise_displacement']
+    
     fmriprep_confounds = fmriprep[confound_cols].fillna(0)
     
-    # Combine and save as a tsv file
+    # Combine and save
     confounds = pd.concat([fmriprep_confounds, rejected_ica], axis=1)
     os.makedirs(f"{output_dir}/{sub}", exist_ok=True)
-    confounds.to_csv(f"{output_dir}/{sub}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv", sep='\t', index=False)
+    
+    output_file = f"{output_dir}/{sub}/{sub}_task-{task}_run-{run}_desc-LSS_confounds.tsv"
+    confounds.to_csv(output_file, sep='\t', index=False)
+    
+    print(f"  ✓ Saved: {confounds.shape[0]} timepoints × {confounds.shape[1]} regressors\n")
+
+print("Done!")
 ```
 
 Command to Run This Python Script
 - activate your conda environment first
 ```
-python ~/make_confounds_LSS.py
+python /path/to/your/make_confounds.py
 ```
 
 TSV Output example
@@ -394,23 +420,15 @@ TSV Output example
 Assuming that you created your confound files, and you ran fmriprep and you have your task event file (in 3 columns), we can run least squares single to extract a single beta map corresponding to each trial within the task event files.
 
 Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
-```
-sub-302/
-  run-01/
-    self_induction/
-      sub-302_run-01_trial-1_self_induction_beta.nii.gz
-      sub-302_run-01_trial-2_self_induction_beta.nii.gz
-      sub-302_run-01_trial-3_self_induction_beta.nii.gz
-    other_induction/
-      sub-302_run-01_trial-1_other_induction_beta.nii.gz
-      sub-302_run-01_trial-2_other_induction_beta.nii.gz
-      sub-302_run-01_trial-3_other_induction_beta.nii.gz
-  run-02/
-    self_induction/
-      sub-302_run-02_trial-4_self_induction_beta.nii.gz
-```
 
 Copy the code below and create a file titled LSS_beta_L1.py
+
+
+Install required packages:
+```
+pip install numpy pandas nilearn nibabel
+```
+
 
 ```
 import os
@@ -422,28 +440,27 @@ import time
 
 # Get subjects from command line
 if len(sys.argv) > 1:
-    subjects = sys.argv[1:]  # All arguments after script name
+    subjects = sys.argv[1:]
 else:
-    print("Usage: python3 test_lss_pgt.py sub-302 sub-303 sub-304 ...")
+    print("Usage: python3 lss_beta_extraction.py sub-302 sub-303 ...")
     sys.exit(1)
 
-print(f"\n{'='*60}")
-print(f"LSS Beta Extraction")
-print(f"Processing {len(subjects)} subjects: {', '.join(subjects)}")
-print(f"Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-print(f"{'='*60}\n")
+print(f"\nLSS Beta Extraction")
+print(f"Processing {len(subjects)} subjects: {', '.join(subjects)}\n")
 
-base_dir = "/zpool/olsonlab/active_drive/ljhoffman/pgt"
+# EDIT THESE PATHS
+base_dir = "/path/to/your/project"
 fmriprep_dir = f"{base_dir}/derivatives/fmriprep"
-tedana_dir = f"{base_dir}/derivatives/tedana"
-timing_dir = f"{base_dir}/sharepoint/time_data"
-confounds_base_dir = f"{base_dir}/derivatives/confounds/LSS"
-out_base_dir = f"{base_dir}/derivatives/RSA/lss_betas/v2/"
+timing_dir = f"{base_dir}/timing_files"  # Path to your timing files
+confounds_dir = f"{base_dir}/derivatives/confounds/LSS"
+out_dir = f"{base_dir}/derivatives/lss_betas"
 
-runs = ["01", "02", "03", "04"]
-TR = 1.615
+# EDIT THESE: Your runs and TR
+runs = ["01", "02", "03", "04"]  # Adjust to your number of runs
+TR = 1.615  # Your repetition time in seconds
 
 def read_events(txt_file, trial_type):
+    """Read timing file (3 columns: onset, duration, trial_type)"""
     arr = np.loadtxt(txt_file)
     if arr.ndim == 1:
         arr = arr[None, :]
@@ -453,102 +470,116 @@ def read_events(txt_file, trial_type):
         "trial_type": trial_type
     })
 
-# Loop through subjects
+# Process each subject
 for subj in subjects:
-    print(f"\n{'#'*60}")
-    print(f"# SUBJECT: {subj}")
-    print(f"# Started: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"{'#'*60}\n")
+    print(f"\n{'='*60}")
+    print(f"Processing {subj}")
+    print(f"{'='*60}\n")
     
-    confounds_dir = f"{confounds_base_dir}/{subj}"
-    out_dir = f"{out_base_dir}/{subj}"
+    subj_confounds_dir = f"{confounds_dir}/{subj}"
+    subj_out_dir = f"{out_dir}/{subj}"
     
-    self_trial_num = 1
-    other_trial_num = 1
+    # Track trial numbers across runs
+    condition1_trial_num = 1  # EDIT: Replace with your condition name
+    condition2_trial_num = 1  # EDIT: Replace with your condition name
     
     for run in runs:
-        print(f"\n{'='*60}")
-        print(f"Processing {subj} run-{run}")
-        print(f"{'='*60}")
+        print(f"Processing run-{run}")
         
-        bold_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-PGT_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz"
-        mask_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-PGT_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-brain_mask.nii.gz"
-        confounds_file = f"{confounds_dir}/{subj}_task-PGT_run-{run}_desc-LSS_confounds.tsv"
+        # EDIT THIS: Replace "task-PGT" with your task name
+        bold_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-YOUR_TASK_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz"
+        mask_file = f"{fmriprep_dir}/{subj}/func/{subj}_task-YOUR_TASK_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-brain_mask.nii.gz"
+        confounds_file = f"{subj_confounds_dir}/{subj}_task-YOUR_TASK_run-{run}_desc-LSS_confounds.tsv"
         
+        # Check files exist
         if not all(os.path.exists(f) for f in [bold_file, mask_file, confounds_file]):
-            print(f"WARNING: Missing files for run {run}, skipping")
-            print(f"  BOLD: {os.path.exists(bold_file)}")
-            print(f"  Mask: {os.path.exists(mask_file)}")
-            print(f"  Confounds: {os.path.exists(confounds_file)}")
+            print(f"  WARNING: Missing files for run {run}, skipping")
             continue
-
-        self_file = f"{timing_dir}/{subj}/run-{run}/self_induction.txt"
-        other_file = f"{timing_dir}/{subj}/run-{run}/other_induction.txt"
-
-        self_events = read_events(self_file, "self_induction")
-        other_events = read_events(other_file, "other_induction")
-        events = pd.concat([self_events, other_events], ignore_index=True).sort_values("onset").reset_index(drop=True)
         
-        print(f"Found {len(self_events)} self trials and {len(other_events)} other trials")
-
+        # EDIT THIS: Paths to your timing files
+        # Format: /path/to/timing/sub-XXX/run-XX/condition_name.txt
+        condition1_file = f"{timing_dir}/{subj}/run-{run}/condition1.txt"
+        condition2_file = f"{timing_dir}/{subj}/run-{run}/condition2.txt"
+        
+        # Read timing files
+        condition1_events = read_events(condition1_file, "condition1")
+        condition2_events = read_events(condition2_file, "condition2")
+        events = pd.concat([condition1_events, condition2_events], ignore_index=True).sort_values("onset").reset_index(drop=True)
+        
+        print(f"  Found {len(condition1_events)} condition1 trials and {len(condition2_events)} condition2 trials")
+        
+        # Read confounds
         confounds = pd.read_csv(confounds_file, sep="\t")
-        print(f"Using {confounds.shape[1]} confound regressors")
-
-        run_out = f"{out_dir}/run-{run}"
-        self_out = f"{run_out}/self_induction"
-        other_out = f"{run_out}/other_induction"
-        os.makedirs(self_out, exist_ok=True)
-        os.makedirs(other_out, exist_ok=True)
-
+        print(f"  Using {confounds.shape[1]} confound regressors")
+        
+        # Create output directories
+        run_out = f"{subj_out_dir}/run-{run}"
+        condition1_out = f"{run_out}/condition1"
+        condition2_out = f"{run_out}/condition2"
+        os.makedirs(condition1_out, exist_ok=True)
+        os.makedirs(condition2_out, exist_ok=True)
+        
+        # LSS: Fit separate GLM for each trial
         for i in range(len(events)):
             trial = events.iloc[[i]].copy()
             others = events.drop(i).copy()
             cond = trial.iloc[0]["trial_type"]
-
+            
+            # Relabel for LSS
             trial["trial_type"] = "trial_of_interest"
             others["trial_type"] = "other_trials"
             lss_events = pd.concat([trial, others], ignore_index=True)
             
+            # Fit GLM
             model = FirstLevelModel(
                 t_r=TR,
-                hrf_model="spm",
+                hrf_model="spm",  # EDIT: Can use "glover", "spm", "fir", etc.
                 drift_model="cosine",
-                high_pass=0.008,
-                smoothing_fwhm=None,
+                high_pass=0.008,  # EDIT: Adjust if needed (1/128 Hz default)
+                smoothing_fwhm=None,  # EDIT: Add smoothing if desired (e.g., 5)
                 mask_img=mask_file,
                 signal_scaling=False,
                 minimize_memory=False
             )
-
+            
             model.fit(run_imgs=bold_file, events=lss_events, confounds=confounds)
             beta = model.compute_contrast("trial_of_interest", output_type="effect_size")
-
-            if cond == "self_induction":
-                out_file = f"{self_out}/{subj}_run-{run}_trial-{self_trial_num:02d}_self_induction_beta.nii.gz"
-                self_trial_num += 1
+            
+            # Save beta map
+            if cond == "condition1":
+                out_file = f"{condition1_out}/{subj}_run-{run}_trial-{condition1_trial_num:02d}_condition1_beta.nii.gz"
+                condition1_trial_num += 1
             else:
-                out_file = f"{other_out}/{subj}_run-{run}_trial-{other_trial_num:02d}_other_induction_beta.nii.gz"
-                other_trial_num += 1
-
+                out_file = f"{condition2_out}/{subj}_run-{run}_trial-{condition2_trial_num:02d}_condition2_beta.nii.gz"
+                condition2_trial_num += 1
+            
             beta.to_filename(out_file)
-            print(f"  ✓ Trial {i+1}/{len(events)}: {os.path.basename(out_file)}")
+            print(f"  ✓ Trial {i+1}/{len(events)}")
     
-    print(f"\n{'#'*60}")
-    print(f"# {subj} COMPLETE!")
-    print(f"# Generated {self_trial_num-1} self betas and {other_trial_num-1} other betas")
-    print(f"# Finished: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"{'#'*60}\n")
+    print(f"\n{subj} COMPLETE!")
+    print(f"Generated {condition1_trial_num-1} condition1 betas and {condition2_trial_num-1} condition2 betas\n")
 
-print(f"\n{'='*60}")
-print(f"ALL SUBJECTS COMPLETE!")
-print(f"Finished at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-print(f"{'='*60}\n")
+print("ALL SUBJECTS COMPLETE!")
 ```
 
 Paste the code below to execute the script
 ```
-python ~/LSS_beta_L1.py
+python lss_beta_extraction.py sub-302 sub-303 sub-304
 ```
+
+Expected output:
+
+derivatives/lss_betas/
+└── sub-302/
+    └── run-01/
+        ├── condition1/
+        │   ├── sub-302_run-01_trial-01_condition1_beta.nii.gz
+        │   ├── sub-302_run-01_trial-02_condition1_beta.nii.gz
+        │   └── ...
+        └── condition2/
+            ├── sub-302_run-01_trial-01_condition2_beta.nii.gz
+            └── ...
+
 
 Let's take a look at an example subject:
 /zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives/RSA/lss_betas/v2/sub-302/run-01/other_induction/sub-302_run-01_trial-01_other_induction_beta.nii.gz
