@@ -562,9 +562,9 @@ for subj in subjects:
 print("ALL SUBJECTS COMPLETE!")
 ```
 
-Paste the code below to execute the script
+Paste the code below to execute the script. Run for 1 or multiple subjects
 ```
-python lss_beta_extraction.py sub-302 sub-303 sub-304
+python lss_beta_extraction.py sub-## sub-##
 ```
 
 Expected output:
