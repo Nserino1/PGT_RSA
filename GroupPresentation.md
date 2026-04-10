@@ -22,7 +22,7 @@ What you'll need to edit:
 - Echo times: Update the -e flag in tedana to match your TEs
 - Condition names: Replace self_induction and other_induction with your conditions
 - Acquisition parameters: Update TR, number of runs, smoothing preferences
-- Throughout the scripts below, look for # EDIT THIS comments indicating what needs to be customized for your dataset. The core logic remains the same—only the specifics of your data need to change.
+- Throughout the scripts below, look for **# EDIT THIS** comments indicating what needs to be customized for your dataset. The core logic remains the same—only the specifics of your data need to change.
 
 Note: We do not create timing files in this script. You must prepare your own 3-column timing files before running LSS beta extraction.
 
