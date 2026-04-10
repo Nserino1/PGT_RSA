@@ -256,7 +256,7 @@ After fMRIPrep, we ran tedana to leverage our multi-echo fMRI acquisition.
 Tedana uses ICA to distinguish BOLD signal from noise based on TE-dependence: true BOLD signal shows predictable T2* decay across echoes, while non-BOLD artifacts (motion, scanner drift, physiological noise) exhibit TE-independent patterns. This allows tedana to classify components as signal (accepted) or noise (rejected).
 
 Script to run tedana
-- This Runs tedana on all 4 runs for each subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
+- This script runs tedana on 4 runs for a single subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
 
 #### Bash script to run tedana
 
