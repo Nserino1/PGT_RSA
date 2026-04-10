@@ -242,45 +242,38 @@ Script to run tedana
 ```
 #!/bin/bash
 
-# List of subjects 
-SUBJECTS="302 303 304 305 306 307 308 309 310 311"
+# Example of a single subject
+SUBJECT="304"
 
 # Paths
 DERIVATIVES_DIR="/zpool/olsonlab/active_drive/ljhoffman/pgt/derivatives"
+FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
+TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
+mkdir -p ${TEDANA_OUT}/func
 
-# For loop through subjects
-for SUBJECT in ${SUBJECTS}
+# Process each run (1-4)
+for RUN in 1 2 3 4
 do
-  echo "Processing subject: ${SUBJECT}"
+  RUN_FORMATTED=$(printf "%02d" ${RUN})
   
-  FMRIPREP_DIR="${DERIVATIVES_DIR}/fmriprep/sub-${SUBJECT}"
-  TEDANA_OUT="${DERIVATIVES_DIR}/tedana/sub-${SUBJECT}"
-  mkdir -p ${TEDANA_OUT}/func
+  echo "  Run ${RUN}..."
   
-  # Process each run (1-4)
-  for RUN in 1 2 3 4
-  do
-    RUN_FORMATTED=$(printf "%02d" ${RUN})
-    
-    echo "  Run ${RUN}..."
-    
-    # Run tedana for all 4 echoes
-    tedana \
-      -d \
-        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
-        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-2_desc-preproc_bold.nii.gz \
-        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-3_desc-preproc_bold.nii.gz \
-        ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-4_desc-preproc_bold.nii.gz \
-      -e 13.8 29.7 45.6 61.5 \
-      --mask ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_desc-brain_mask.nii.gz \
-      --out-dir ${TEDANA_OUT}/func/run-${RUN_FORMATTED} \
-      --prefix sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED} \
-      --convention bids \
-      --n-threads 16
-  done
-  
+  # Run tedana for all 4 echoes
+  tedana \
+    -d \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-1_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-2_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-3_desc-preproc_bold.nii.gz \
+      ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_echo-4_desc-preproc_bold.nii.gz \
+    -e 13.8 29.7 45.6 61.5 \
+    --mask ${FMRIPREP_DIR}/func/sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED}_desc-brain_mask.nii.gz \
+    --out-dir ${TEDANA_OUT}/func/run-${RUN_FORMATTED} \
+    --prefix sub-${SUBJECT}_task-PGT_run-${RUN_FORMATTED} \
+    --convention bids \
+    --n-threads 16
 done
 
+echo "Subject ${SUBJECT} complete!"
 ```
 
 #### Run Tedana Script Command
