@@ -1,6 +1,16 @@
 # Group Presentation
+Authors: Nicole Serino, Ranesh Mopuru, and McDaniel Andre.
+Date: April 10th, 2026
 
-Using This Pipeline with Your Own Data:
+
+## Table of Contents
+1. [Run fMRIprep](#mcdaniel)
+2. [Run tedana](#nicole)
+3. [Create a Confounds File for Level 1 Analysis from fMRIprep and tedana](#nicole2)
+4. [Run Level 1 Analysis (betamaps)](#ranesh)
+
+
+How to Use This Pipeline with Your Own Data:
 This pipeline can be adapted for any multi-echo fMRI dataset. To use these scripts with your own data, you'll need to update file paths, subject IDs, task names, and parameters specific to your acquisition.What you'll need to edit:
 
 - File paths: Update all directory paths to point to your data
@@ -12,12 +22,6 @@ This pipeline can be adapted for any multi-echo fMRI dataset. To use these scrip
 - Throughout the scripts below, look for # EDIT THIS comments indicating what needs to be customized for your dataset. The core logic remains the same—only the specifics of your data need to change.
 
 Note: We do not create timing files in this script. You must prepare your own 3-column timing files before running LSS beta extraction.
-
-
-## Table of Contents
-1. [fMRIprep](#mcdaniel)
-2. [tedana](#nicole)
-3. [Level 1 Analysis](#ranesh)
 
 # fMRIPrep <a id='mcdaniel'></a>
 
@@ -305,7 +309,7 @@ bash /path/to/your/tedana_script.sh
 Tedana ICA component classification showing accepted BOLD components (green) separated from rejected noise components (red) based on TE-dependence.
 
 #
-# Make Combined Confounds File
+# Make Combined Confounds File <a id='nicole2'></a>
 Great! Now that we have run tedana and fMRIprep, we need to prepare confound files for our first-level analysis. fMRIPrep and tedana create separate output files, so need to write a script to combine them. 
 
 
