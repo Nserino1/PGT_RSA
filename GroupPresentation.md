@@ -239,6 +239,8 @@ Script to run tedana
 - This Runs tedana on all 4 runs for each subject using the 4 preprocessed echo files from fMRIPrep. Edit the SUBJECTS list at the top to specify subjects.
 
 #### Bash script to run tedana
+
+#### Copy the code below, replace with paths to your data, and create a file titled tedana_script.sh
 ```
 #!/bin/bash
 
@@ -278,7 +280,8 @@ done
 echo "Subject ${SUBJECT} complete!"
 ```
 
-#### Run Tedana Script Command
+### How to run?
+Command to Run Bash Script
 ```
 bash /path/to/your/tedana_script.sh
 ```
@@ -321,6 +324,7 @@ This may capture capture:
 
 #### This is python script that combines confounds from fMRIprep and tedana. 
 
+#### Copy the code below, replace with paths to your data, and create a file titled make_confounds.py
 
 Install required packages (if needed):
 ```
@@ -397,6 +401,7 @@ for file in metric_files:
 print("Done!")
 ```
 
+### How to run?
 Command to Run This Python Script
 - activate your conda environment first
 ```
@@ -421,7 +426,7 @@ Assuming that you created your confound files, and you ran fmriprep and you have
 
 Note that we have 4 runs of data, and each run has 3 trials for both the self and other condition, so we will pull a beta map for each trial and each run, such that we have the following file structure for our outputs:
 
-Copy the code below and create a file titled LSS_beta_L1.py
+#### Copy the code below, replace with paths to your data, and create a file titled LSS_beta_L1.py
 
 
 Install required packages:
@@ -561,7 +566,9 @@ for subj in subjects:
 
 print("ALL SUBJECTS COMPLETE!")
 ```
-
+### How to run?
+Command to Run This Python Script
+- activate your conda environment first
 Paste the code below to execute the script. Run for 1 or multiple subjects
 ```
 python lss_beta_extraction.py sub-## sub-##
